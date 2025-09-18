@@ -1,4 +1,4 @@
-// AFL_USE_ASAN=1 afl-clang-fast -g -O1 -fsanitize=address,undefined \
+// AFL_USE_ASAN=1 afl-clang-lto -g -O1 -fsanitize=address,undefined \
 // iniparser_fuzz.c iniparser.c dictionary.c -o iniparser_fuzz
 
 #include <stdio.h>
@@ -7,9 +7,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <string.h>
-#include <afl-fuzz.h>
-
-#ifndef __AFL_FUZZ_TESTCASE_LEN
 
 #include "iniparser.h"
 #include <stdio.h>
@@ -29,11 +26,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size == 0) {
         return 0;
     }
+    size_t first_half = (size * 3) / 4;
 
 
-    FILE *fp = fmemopen(null_terminated_data, size, "r");
+    FILE *fp = fmemopen((void *)data, first_half, "r");
     if (!fp) {
-        free(null_terminated_data);
         return 0;
     }
     
@@ -57,27 +54,41 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
         }
         
-
-        // test_keys = data[:data_len/2]
-        // could do something like this and test the rest of the API calls if you really wanted to
-        // for (size_t i = 0; i < sizeof(test_keys) / sizeof(test_keys[0]); i++) {
-        //     iniparser_getstring(dict, test_keys[i], "default");
-        //     iniparser_getint(dict, test_keys[i], 0);
-        //     iniparser_getboolean(dict, test_keys[i], 0);
-        //     iniparser_getdouble(dict, test_keys[i], 0.0);
-        // }
-        
-        // iniparser_set(dict, "fuzz:test", "value");
-        // iniparser_unset(dict, "fuzz:test");
-        // iniparser_freedict(dict);
+        size_t start = (size * 3) / 4;
+        const uint8_t *keys_data = data + start;
+        size_t keys_len = size - start;
+        size_t i = 0;
+        size_t max_keys = 64;
+        size_t parsed = 0;
+        while (i < keys_len && parsed < max_keys) {
+            while (i < keys_len && (keys_data[i] == '\n' || keys_data[i] == '\r' || keys_data[i] == '\t' || keys_data[i] == ' ')) i++;
+            if (i >= keys_len) break;
+            size_t j = i;
+            while (j < keys_len && keys_data[j] != '\n' && keys_data[j] != '\r' && keys_data[j] != '\t' && keys_data[j] != ' ') j++;
+            size_t tok_len = j - i;
+            if (tok_len > 0) {
+                if (tok_len > 256) tok_len = 256;
+                char *key = (char *)malloc(tok_len + 1);
+                if (!key) break;
+                memcpy(key, keys_data + i, tok_len);
+                key[tok_len] = '\0';
+                (void)iniparser_getstring(dict, key, "default");
+                (void)iniparser_getint(dict, key, 0);
+                (void)iniparser_getboolean(dict, key, 0);
+                (void)iniparser_getdouble(dict, key, 0.0);
+                free(key);
+                parsed++;
+            }
+            i = j + 1;
+        }
     }
     
     fclose(fp);
-    free(null_terminated_data);
     
     return 0;
 }
 
+#ifndef __AFL_FUZZ_TESTCASE_LEN
 ssize_t fuzz_len;
 unsigned char fuzz_buf[1024000];
 
@@ -87,7 +98,6 @@ unsigned char fuzz_buf[1024000];
 #define __AFL_LOOP(x) \
    ((fuzz_len = read(0, fuzz_buf, sizeof(fuzz_buf))) > 0 ? 1 : 0)
 #define __AFL_INIT() sync()
-
 #endif
 
 __AFL_FUZZ_INIT();
