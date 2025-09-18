@@ -1,0 +1,21 @@
+"functions":
+- "name": "iniparser_dump_ini"
+  "file": "iniparser.c"
+  "params":
+  - "name": "d"
+    "type": "const dictionary*"
+  - "name": "f"
+    "type": "FILE*"
+  "return_type": "It is Ok to specify @c stderr or @c stdout as output files. */ /*--------------------------------------------------------------------------*/ void"
+  "signature": "It is Ok to specify @c stderr or @c stdout as output files. */ /*--------------------------------------------------------------------------*/ void iniparser_dump_ini(const dictionary *d, FILE *f)"
+- "name": "iniparser_dumpsection_ini"
+  "file": "iniparser.c"
+  "params":
+  - "name": "d"
+    "type": "const dictionary*"
+  - "name": "s"
+    "type": "const char*"
+  - "name": "f"
+    "type": "FILE*"
+  "return_type": "file.  It is Ok to specify @c stderr or @c stdout as output files. */ /*--------------------------------------------------------------------------*/ void"
+  "signature": "file.  It is Ok to specify @c stderr or @c stdout as output files. */ /*--------------------------------------------------------------------------*/ void iniparser_dumpsection_ini(const dictionary *d, const char *s, FILE *f)"
