@@ -1,5 +1,7 @@
 // AFL_USE_ASAN=1 afl-clang-lto -g -O1 -fsanitize=address,undefined \
 // iniparser_fuzz.c iniparser.c dictionary.c -o iniparser_fuzz
+// clang -DNO_MAIN -g -O2 -fsanitize=fuzzer iniparser_fuzz.c iniparser.c dictionary.c -o iniparser_fuzz
+
 
 #include <stdio.h>
 #include <stdint.h>
